@@ -16,6 +16,11 @@
   <depend>gazebo_ros_pkgs</depend>
   <depend>gazebo</depend>
   <depend>gazebo_ros</depend>
+  <depend>gazebo_ros2_control</depend>
+  <depend>controller_manager</depend>
+  <depend>forward_command_controller</depend>
+  <depend>joint_state_broadcaster</depend>
+  <depend>xacro</depend>
   <depend>nav2_bringup</depend>
   <export>
     <build_type>ament_python</build_type>

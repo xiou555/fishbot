@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
-<robot name="fishbot">
+<robot name="fishbot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:arg name="controllers_file" default="/tmp/four_wheel_controllers.yaml"/>
 
 
   <!-- Robot Footprint -->
@@ -17,7 +19,7 @@
   	<visual>
       <origin xyz="0 0 0.0" rpy="0 0 0"/>
       <geometry>
-		<box size="0.53 0.46 0.12"/>
+  		<box size="0.60 0.52 0.12"/>
       </geometry>
       <material name="blue">
       	<color rgba="0.1 0.1 1.0 0.5" /> 
@@ -26,7 +28,7 @@
     <collision>
       <origin xyz="0 0 0.0" rpy="0 0 0"/>
       <geometry>
-		<box size="0.53 0.46 0.12"/>
+		<box size="0.60 0.52 0.12"/>
       </geometry>
       <material name="blue">
       	<color rgba="0.1 0.1 1.0 0.5" /> 
@@ -98,391 +100,329 @@
   </joint>
 
 
-  <link name="left_wheel_link">
+  <!-- 四轮全向（四个独立转向 + 四个独立驱动） -->
+  <!-- 参数：左右轮距 0.42m，前后轮距 0.45m，轮半径 0.06m，转向偏移 y=0 -->
+
+  <!-- 前左转向电机（上层） -->
+  <link name="front_left_steer_link">
       <visual>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
+        <origin xyz="0 0 0.03" rpy="0 0 0"/>
         <geometry>
-          <cylinder length="0.04" radius="0.085"/>
+          <cylinder length="0.06" radius="0.018"/>
         </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
+        <material name="gray">
+          <color rgba="0.5 0.5 0.5 0.8" />
+        </material>
       </visual>
-      <collision>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
-        <geometry>
-          <cylinder length="0.04" radius="0.085"/>
-        </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
-      </collision>
       <inertial>
         <mass value="0.2"/>
-          <inertia ixx="0.000190416666667" ixy="0" ixz="0" iyy="0.0001904" iyz="0" izz="0.00036"/>
-        </inertial>
+        <inertia ixx="0.0002" ixy="0" ixz="0" iyy="0.0002" iyz="0" izz="0.0002"/>
+      </inertial>
   </link>
-    
-  <link name="right_wheel_link">
+
+  <joint name="front_left_steer_joint" type="revolute">
+      <parent link="base_link" />
+      <child link="front_left_steer_link" />
+      <origin xyz="0.225 0.21 -0.016" rpy="0 0 0" />
+      <axis xyz="0 0 1" />
+      <limit lower="-1.5708" upper="1.5708" effort="20.0" velocity="1.5"/>
+  </joint>
+
+  <link name="front_left_wheel_link">
       <visual>
         <origin xyz="0 0 0" rpy="1.57079 0 0"/>
         <geometry>
-          <cylinder length="0.04" radius="0.085"/>
+          <cylinder length="0.045" radius="0.06"/>
         </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
+        <material name="black">
+          <color rgba="0.0 0.0 0.0 0.7" />
+        </material>
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="1.57079 0 0"/>
         <geometry>
-          <cylinder length="0.04" radius="0.085"/>
+          <cylinder length="0.045" radius="0.06"/>
         </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
       </collision>
       <inertial>
-      <mass value="0.2"/>
-      <inertia ixx="0.000190416666667" ixy="0" ixz="0" iyy="0.0001904" iyz="0" izz="0.00036"/>
-    </inertial>
+        <mass value="0.25"/>
+        <inertia ixx="0.0003" ixy="0" ixz="0" iyy="0.0003" iyz="0" izz="0.0005"/>
+      </inertial>
   </link>
-    
-  <joint name="left_wheel_joint" type="continuous">
-      <parent link="base_link" />
-      <child link="left_wheel_link" />
-      <origin xyz="-0.02 0.17 -0.06" />
+
+  <joint name="front_left_wheel_joint" type="continuous">
+      <parent link="front_left_steer_link" />
+      <child link="front_left_wheel_link" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <axis xyz="0 1 0" />
   </joint>
 
-  <joint name="right_wheel_joint" type="continuous">
+  <!-- 前右转向电机（上层） -->
+  <link name="front_right_steer_link">
+      <visual>
+        <origin xyz="0 0 0.03" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.06" radius="0.018"/>
+        </geometry>
+        <material name="gray">
+          <color rgba="0.5 0.5 0.5 0.8" />
+        </material>
+      </visual>
+      <inertial>
+        <mass value="0.2"/>
+        <inertia ixx="0.0002" ixy="0" ixz="0" iyy="0.0002" iyz="0" izz="0.0002"/>
+      </inertial>
+  </link>
+
+  <joint name="front_right_steer_joint" type="revolute">
       <parent link="base_link" />
-      <child link="right_wheel_link" />
-      <origin xyz="-0.02 -0.17 -0.06" />
+      <child link="front_right_steer_link" />
+      <origin xyz="0.225 -0.21 -0.016" rpy="0 0 0" />
+      <axis xyz="0 0 1" />
+      <limit lower="-1.5708" upper="1.5708" effort="20.0" velocity="1.5"/>
+  </joint>
+
+  <link name="front_right_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
+        <geometry>
+          <cylinder length="0.045" radius="0.06"/>
+        </geometry>
+        <material name="black">
+          <color rgba="0.0 0.0 0.0 0.7" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
+        <geometry>
+          <cylinder length="0.045" radius="0.06"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.25"/>
+        <inertia ixx="0.0003" ixy="0" ixz="0" iyy="0.0003" iyz="0" izz="0.0005"/>
+      </inertial>
+  </link>
+
+  <joint name="front_right_wheel_joint" type="continuous">
+      <parent link="front_right_steer_link" />
+      <child link="front_right_wheel_link" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <axis xyz="0 1 0" />
   </joint>
 
-  <!-- 四个万象轮（前二后二，两段关节结构） -->
-  <!-- 前左万象轮基座（转向） -->
-  <link name="front_left_omni_base_link">
+  <!-- 后左转向电机（上层） -->
+  <link name="rear_left_steer_link">
       <visual>
-        <origin xyz="0 0 -0.015" rpy="0 0 0"/>
+        <origin xyz="0 0 0.03" rpy="0 0 0"/>
         <geometry>
-          <cylinder length="0.03" radius="0.015"/>
+          <cylinder length="0.06" radius="0.018"/>
         </geometry>
-          <material name="gray">
-            <color rgba="0.5 0.5 0.5 0.8" /> 
-          </material>
+        <material name="gray">
+          <color rgba="0.5 0.5 0.5 0.8" />
+        </material>
       </visual>
       <inertial>
-        <mass value="0.05"/>
-          <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
-        </inertial>
+        <mass value="0.2"/>
+        <inertia ixx="0.0002" ixy="0" ixz="0" iyy="0.0002" iyz="0" izz="0.0002"/>
+      </inertial>
   </link>
 
-  <joint name="front_left_omni_base_joint" type="continuous">
+  <joint name="rear_left_steer_joint" type="revolute">
       <parent link="base_link" />
-      <child link="front_left_omni_base_link" />
-      <origin xyz="0.15 0.19 -0.015" />
+      <child link="rear_left_steer_link" />
+      <origin xyz="-0.225 0.21 -0.016" rpy="0 0 0" />
       <axis xyz="0 0 1" />
+      <limit lower="-1.5708" upper="1.5708" effort="20.0" velocity="1.5"/>
   </joint>
 
-  <!-- 前左万象轮轮子（滚动） -->
-  <link name="front_left_omni_wheel_link">
+  <link name="rear_left_wheel_link">
       <visual>
         <origin xyz="0 0 0" rpy="1.57079 0 0"/>
         <geometry>
-          <cylinder length="0.04" radius="0.05"/>
+          <cylinder length="0.045" radius="0.06"/>
         </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
+        <material name="black">
+          <color rgba="0.0 0.0 0.0 0.7" />
+        </material>
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="1.57079 0 0"/>
         <geometry>
-          <cylinder length="0.04" radius="0.05"/>
+          <cylinder length="0.045" radius="0.06"/>
         </geometry>
       </collision>
       <inertial>
-        <mass value="0.1"/>
-          <inertia ixx="0.000190416666667" ixy="0" ixz="0" iyy="0.0001904" iyz="0" izz="0.00036"/>
-        </inertial>
+        <mass value="0.25"/>
+        <inertia ixx="0.0003" ixy="0" ixz="0" iyy="0.0003" iyz="0" izz="0.0005"/>
+      </inertial>
   </link>
 
-  <joint name="front_left_omni_wheel_joint" type="continuous">
-      <parent link="front_left_omni_base_link" />
-      <child link="front_left_omni_wheel_link" />
-      <origin xyz="0 0 -0.08" />
-      <axis xyz="1 0 0" />
-  </joint>
-
-  <!-- 前右万象轮基座（转向） -->
-  <link name="front_right_omni_base_link">
-      <visual>
-        <origin xyz="0 0 -0.015" rpy="0 0 0"/>
-        <geometry>
-          <cylinder length="0.03" radius="0.015"/>
-        </geometry>
-          <material name="gray">
-            <color rgba="0.5 0.5 0.5 0.8" /> 
-          </material>
-      </visual>
-      <inertial>
-        <mass value="0.05"/>
-          <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
-        </inertial>
-  </link>
-
-  <joint name="front_right_omni_base_joint" type="continuous">
-      <parent link="base_link" />
-      <child link="front_right_omni_base_link" />
-      <origin xyz="0.15 -0.19 -0.015" />
-      <axis xyz="0 0 1" />
-  </joint>
-
-  <!-- 前右万象轮轮子（滚动） -->
-  <link name="front_right_omni_wheel_link">
-      <visual>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
-        <geometry>
-          <cylinder length="0.04" radius="0.05"/>
-        </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
-      </visual>
-      <collision>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
-        <geometry>
-          <cylinder length="0.04" radius="0.05"/>
-        </geometry>
-      </collision>
-      <inertial>
-        <mass value="0.1"/>
-          <inertia ixx="0.000190416666667" ixy="0" ixz="0" iyy="0.0001904" iyz="0" izz="0.00036"/>
-        </inertial>
-  </link>
-
-  <joint name="front_right_omni_wheel_joint" type="continuous">
-      <parent link="front_right_omni_base_link" />
-      <child link="front_right_omni_wheel_link" />
-      <origin xyz="0 0 -0.08" />
-      <axis xyz="1 0 0" />
-  </joint>
-
-  <!-- 后左万象轮基座（转向） -->
-  <link name="rear_left_omni_base_link">
-      <visual>
-        <origin xyz="0 0 -0.015" rpy="0 0 0"/>
-        <geometry>
-          <cylinder length="0.03" radius="0.015"/>
-        </geometry>
-          <material name="gray">
-            <color rgba="0.5 0.5 0.5 0.8" /> 
-          </material>
-      </visual>
-      <inertial>
-        <mass value="0.05"/>
-          <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
-        </inertial>
-  </link>
-
-  <joint name="rear_left_omni_base_joint" type="continuous">
-      <parent link="base_link" />
-      <child link="rear_left_omni_base_link" />
-      <origin xyz="-0.15 0.19 -0.015" />
-      <axis xyz="0 0 1" />
-  </joint>
-
-  <!-- 后左万象轮轮子（滚动） -->
-  <link name="rear_left_omni_wheel_link">
-      <visual>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
-        <geometry>
-          <cylinder length="0.04" radius="0.05"/>
-        </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
-      </visual>
-      <collision>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
-        <geometry>
-          <cylinder length="0.04" radius="0.05"/>
-        </geometry>
-      </collision>
-      <inertial>
-        <mass value="0.1"/>
-          <inertia ixx="0.000190416666667" ixy="0" ixz="0" iyy="0.0001904" iyz="0" izz="0.00036"/>
-        </inertial>
-  </link>
-
-  <joint name="rear_left_omni_wheel_joint" type="continuous">
-      <parent link="rear_left_omni_base_link" />
-      <child link="rear_left_omni_wheel_link" />
-      <origin xyz="0 0 -0.08" />
-      <axis xyz="1 0 0" />
-  </joint>
-
-  <!-- 后右万象轮基座（转向） -->
-  <link name="rear_right_omni_base_link">
-      <visual>
-        <origin xyz="0 0 -0.015" rpy="0 0 0"/>
-        <geometry>
-          <cylinder length="0.03" radius="0.015"/>
-        </geometry>
-          <material name="gray">
-            <color rgba="0.5 0.5 0.5 0.8" /> 
-          </material>
-      </visual>
-      <inertial>
-        <mass value="0.05"/>
-          <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
-        </inertial>
-  </link>
-
-  <joint name="rear_right_omni_base_joint" type="continuous">
-      <parent link="base_link" />
-      <child link="rear_right_omni_base_link" />
-      <origin xyz="-0.15 -0.19 -0.015" />
-      <axis xyz="0 0 1" />
-  </joint>
-
-  <!-- 后右万象轮轮子（滚动） -->
-  <link name="rear_right_omni_wheel_link">
-      <visual>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
-        <geometry>
-          <cylinder length="0.04" radius="0.05"/>
-        </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
-      </visual>
-      <collision>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
-        <geometry>
-          <cylinder length="0.04" radius="0.05"/>
-        </geometry>
-      </collision>
-      <inertial>
-        <mass value="0.1"/>
-          <inertia ixx="0.000190416666667" ixy="0" ixz="0" iyy="0.0001904" iyz="0" izz="0.00036"/>
-        </inertial>
-  </link>
-
-  <joint name="rear_right_omni_wheel_joint" type="continuous">
-      <parent link="rear_right_omni_base_link" />
-      <child link="rear_right_omni_wheel_link" />
-      <origin xyz="0 0 -0.08" />
-      <axis xyz="1 0 0" />
-  </joint>
-
-  <link name="caster_link">
-      <visual>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
-        <geometry>
-            <sphere radius="0.016"/>
-        </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
-      </visual>
-      <collision>
-        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
-        <geometry>
-            <sphere radius="0.016"/>
-        </geometry>
-          <material name="black">
-            <color rgba="0.0 0.0 0.0 0.5" /> 
-          </material>
-      </collision>
-      <inertial>
-      <mass value="0.02"/>
-      <inertia ixx="0.000190416666667" ixy="0" ixz="0" iyy="0.0001904" iyz="0" izz="0.00036"/>
-    </inertial>
-  </link>
-    
-  <joint name="caster_joint" type="fixed">
-      <parent link="base_link" />
-      <child link="caster_link" />
-      <origin xyz="0.06 0.0 -0.076" />
+  <joint name="rear_left_wheel_joint" type="continuous">
+      <parent link="rear_left_steer_link" />
+      <child link="rear_left_wheel_link" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <axis xyz="0 1 0" />
   </joint>
 
+  <!-- 后右转向电机（上层） -->
+  <link name="rear_right_steer_link">
+      <visual>
+        <origin xyz="0 0 0.03" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="0.06" radius="0.018"/>
+        </geometry>
+        <material name="gray">
+          <color rgba="0.5 0.5 0.5 0.8" />
+        </material>
+      </visual>
+      <inertial>
+        <mass value="0.2"/>
+        <inertia ixx="0.0002" ixy="0" ixz="0" iyy="0.0002" iyz="0" izz="0.0002"/>
+      </inertial>
+  </link>
 
+  <joint name="rear_right_steer_joint" type="revolute">
+      <parent link="base_link" />
+      <child link="rear_right_steer_link" />
+      <origin xyz="-0.225 -0.21 -0.016" rpy="0 0 0" />
+      <axis xyz="0 0 1" />
+      <limit lower="-1.5708" upper="1.5708" effort="20.0" velocity="1.5"/>
+  </joint>
 
-  <gazebo reference="caster_link">
+  <link name="rear_right_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
+        <geometry>
+          <cylinder length="0.045" radius="0.06"/>
+        </geometry>
+        <material name="black">
+          <color rgba="0.0 0.0 0.0 0.7" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="1.57079 0 0"/>
+        <geometry>
+          <cylinder length="0.045" radius="0.06"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.25"/>
+        <inertia ixx="0.0003" ixy="0" ixz="0" iyy="0.0003" iyz="0" izz="0.0005"/>
+      </inertial>
+  </link>
+
+  <joint name="rear_right_wheel_joint" type="continuous">
+      <parent link="rear_right_steer_link" />
+      <child link="rear_right_wheel_link" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <axis xyz="0 1 0" />
+  </joint>
+
+  <!-- 轮胎摩擦参数 -->
+  <gazebo reference="front_left_wheel_link">
+    <mu1 value="0.9"/>
+    <mu2 value="0.9"/>
+    <kp value="1000000.0" />
+    <kd value="10.0" />
     <material>Gazebo/Black</material>
   </gazebo>
 
-  <gazebo reference="caster_link">
-    <mu1 value="0.0"/>
-    <mu2 value="0.0"/>
-    <kp value="1000000.0" />
-    <kd value="10.0" />
-  </gazebo>
-
-  <!-- 万向轮低摩擦配置 -->
-  <gazebo reference="front_left_omni_wheel_link">
-    <mu1 value="0.01"/>
-    <mu2 value="0.01"/>
+  <gazebo reference="front_right_wheel_link">
+    <mu1 value="0.9"/>
+    <mu2 value="0.9"/>
     <kp value="1000000.0" />
     <kd value="10.0" />
     <material>Gazebo/Black</material>
   </gazebo>
 
-  <gazebo reference="front_right_omni_wheel_link">
-    <mu1 value="0.01"/>
-    <mu2 value="0.01"/>
+  <gazebo reference="rear_left_wheel_link">
+    <mu1 value="0.9"/>
+    <mu2 value="0.9"/>
     <kp value="1000000.0" />
     <kd value="10.0" />
     <material>Gazebo/Black</material>
   </gazebo>
 
-  <gazebo reference="rear_left_omni_wheel_link">
-    <mu1 value="0.01"/>
-    <mu2 value="0.01"/>
+  <gazebo reference="rear_right_wheel_link">
+    <mu1 value="0.9"/>
+    <mu2 value="0.9"/>
     <kp value="1000000.0" />
     <kd value="10.0" />
     <material>Gazebo/Black</material>
   </gazebo>
 
-  <gazebo reference="rear_right_omni_wheel_link">
-    <mu1 value="0.01"/>
-    <mu2 value="0.01"/>
-    <kp value="1000000.0" />
-    <kd value="10.0" />
-    <material>Gazebo/Black</material>
+  <!-- 发布轮组关节状态；四轮全向控制建议通过 ros2_control 配置 8 个关节 -->
+  <gazebo>
+    <plugin name='joint_state_publisher' filename='libgazebo_ros_joint_state_publisher.so'>
+      <ros>
+        <namespace>/</namespace>
+      </ros>
+      <update_rate>50</update_rate>
+      <joint_name>front_left_steer_joint</joint_name>
+      <joint_name>front_left_wheel_joint</joint_name>
+      <joint_name>front_right_steer_joint</joint_name>
+      <joint_name>front_right_wheel_joint</joint_name>
+      <joint_name>rear_left_steer_joint</joint_name>
+      <joint_name>rear_left_wheel_joint</joint_name>
+      <joint_name>rear_right_steer_joint</joint_name>
+      <joint_name>rear_right_wheel_joint</joint_name>
+    </plugin>
   </gazebo>
 
+  <ros2_control name="fishbot_four_wheel_system" type="system">
+    <hardware>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+    </hardware>
+
+    <joint name="front_left_steer_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="front_right_steer_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_left_steer_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_right_steer_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="front_left_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="front_right_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_left_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_right_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
 
   <gazebo>
-    <plugin name='diff_drive' filename='libgazebo_ros_diff_drive.so'>
-          <ros>
-            <namespace>/</namespace>
-            <remapping>cmd_vel:=cmd_vel</remapping>
-            <remapping>odom:=odom</remapping>
-          </ros>
-          <update_rate>30</update_rate>
-          <!-- wheels -->
-          <left_joint>left_wheel_joint</left_joint>
-          <right_joint>right_wheel_joint</right_joint>
-          <!-- kinematics -->
-          <wheel_separation>0.34</wheel_separation>
-          <wheel_diameter>0.17</wheel_diameter>
-          <!-- limits -->
-          <max_wheel_torque>20</max_wheel_torque>
-          <max_wheel_acceleration>1.0</max_wheel_acceleration>
-          <!-- output -->
-          <publish_odom>true</publish_odom>
-          <publish_odom_tf>true</publish_odom_tf>
-          <publish_wheel_tf>true</publish_wheel_tf>
-          <odometry_frame>odom</odometry_frame>
-          <robot_base_frame>base_footprint</robot_base_frame>
-      </plugin>
-    </gazebo> 
+    <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+      <parameters>$(arg controllers_file)</parameters>
+    </plugin>
+  </gazebo>
 
     <gazebo reference="imu_link">
       <sensor name="imu_sensor" type="imu">
