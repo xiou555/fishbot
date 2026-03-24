@@ -8,8 +8,18 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 
+// 四轮转向控制节点。
+//
+// 输入来源：
+// 1) /cmd_vel (Twist)：完整四轮全向运动学，优先级最高。
+// 2) /teleop_cmd_vel (Joy)：基于模式的手动控制。
+//
+// 输出：
+// - 转向关节目标到 /forward_position_controller/commands。
+// - 车轮角速度目标到 /forward_velocity_controller/commands。
 class FourWheelCommander : public rclcpp::Node {
  public:
+  // 初始化参数、话题收发以及控制循环定时器。
   FourWheelCommander() : Node("four_wheel_commander") {
     wheel_separation_ = this->declare_parameter("wheel_separation", 0.42);
     wheel_base_ = this->declare_parameter("wheel_base", 0.45);
@@ -63,10 +73,13 @@ class FourWheelCommander : public rclcpp::Node {
     kJoy,
   };
 
+  // 对接近 0 的微小输入做死区抑制。
   static double apply_deadband(double value, double deadband) {
     return (std::abs(value) < deadband) ? 0.0 : value;
   }
 
+  // 将转向角约束在转向关节范围内，必要时通过反转轮速
+  // 来跨越 +/- pi/2 的等效角度。
   static WheelCommand normalize_wheel_command(double steering, double speed) {
     constexpr double kPi = 3.14159265358979323846;
     constexpr double kHalfPi = 1.57079632679489661923;
@@ -78,7 +91,7 @@ class FourWheelCommander : public rclcpp::Node {
       steering += 2.0 * kPi;
     }
 
-    // Keep steering inside [-pi/2, pi/2] to respect steering joint limits.
+    // 将转向角限制在 [-pi/2, pi/2]，满足转向关节限位。
     if (steering > kHalfPi) {
       steering -= kPi;
       speed = -speed;
@@ -90,6 +103,8 @@ class FourWheelCommander : public rclcpp::Node {
     return {steering, speed};
   }
 
+  // 根据底盘速度 (vx, vy, wz) 计算四个车轮的转向角与轮速。
+  // 方法：在机器人坐标系中分解每个轮位点的速度分量。
   void compute_swerve_from_cmd_vel() {
     constexpr double kEps = 1e-6;
     const double vx = vel_msg_.linear.x;
@@ -99,7 +114,7 @@ class FourWheelCommander : public rclcpp::Node {
     const double half_wheel_base = wheel_base_ * 0.5;
     const double half_track = steering_track_ * 0.5;
 
-    // Wheel center positions: FL, FR, RL, RR.
+    // 车轮中心坐标顺序：前左、前右、后左、后右。
     const std::array<std::pair<double, double>, 4> wheel_xy = {
         std::make_pair(half_wheel_base, half_track),
         std::make_pair(half_wheel_base, -half_track),
@@ -129,11 +144,12 @@ class FourWheelCommander : public rclcpp::Node {
     }
   }
 
+  // 解析手柄消息，得到手动模式和速度指令。
   void joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg) {
     joy_mode_selection_ = 4;
     joy_vel_msg_ = geometry_msgs::msg::Twist();
 
-    // Xbox mapping: A->in-phase, LB->opposite-phase, RB->pivot
+    // Xbox 按键映射：A->同向，LB->反向，RB->原地旋转。
     if (msg->buttons.size() > 5U) {
       if (msg->buttons[0] == 1) {
         joy_mode_selection_ = 2;
@@ -157,8 +173,9 @@ class FourWheelCommander : public rclcpp::Node {
     last_joy_time_ = this->now();
   }
 
+  // 保存最新 /cmd_vel 指令，并施加死区滤波。
   void cmd_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg) {
-    // cmd_vel uses full four-wheel kinematics (vx, vy, wz) in auto mode.
+    // 自动模式下，/cmd_vel 使用完整四轮运动学 (vx, vy, wz)。
     cmd_vel_msg_ = *msg;
     cmd_vel_msg_.linear.x =
         apply_deadband(cmd_vel_msg_.linear.x, linear_deadband_);
@@ -170,6 +187,11 @@ class FourWheelCommander : public rclcpp::Node {
     last_cmd_vel_time_ = this->now();
   }
 
+  // 周期控制主循环：
+  // 1) 处理指令超时；
+  // 2) 选择当前有效输入源；
+  // 3) 按模式计算车轮指令；
+  // 4) 发布转向与轮速数组。
   void timer_callback() {
     constexpr double kEps = 1e-6;
     pos_.fill(0.0);
@@ -194,7 +216,7 @@ class FourWheelCommander : public rclcpp::Node {
 
     active_source_ = ActiveSource::kNone;
     if (has_cmd_vel_command_) {
-      // /cmd_vel has higher priority when both sources are present.
+      // 两种输入同时存在时，/cmd_vel 优先级更高。
       active_source_ = ActiveSource::kCmdVel;
       vel_msg_ = cmd_vel_msg_;
       mode_selection_ = 0;
@@ -205,6 +227,7 @@ class FourWheelCommander : public rclcpp::Node {
     }
 
     if (active_source_ == ActiveSource::kNone) {
+      // 没有有效指令源时发布 0，车辆保持静止。
       std_msgs::msg::Float64MultiArray pos_array;
       std_msgs::msg::Float64MultiArray vel_array;
       pos_array.data = std::vector<double>(pos_.begin(), pos_.end());
@@ -215,9 +238,10 @@ class FourWheelCommander : public rclcpp::Node {
     }
 
     if (mode_selection_ == 0) {
+      // 自动模式：使用 /cmd_vel 的完整四轮全向运动学。
       compute_swerve_from_cmd_vel();
     }
-    // opposite phase
+    // 反向模式
     else if (mode_selection_ == 1) {
       const double vx = vel_msg_.linear.x;
       const double wz = vel_msg_.angular.z;
@@ -243,7 +267,7 @@ class FourWheelCommander : public rclcpp::Node {
       vel_[2] = (left_speed - steer_offset) / wheel_radius_;
       vel_[3] = (right_speed + steer_offset) / wheel_radius_;
     }
-    // in-phase
+    // 同向模式
     else if (mode_selection_ == 2) {
       const double vx = vel_msg_.linear.x;
       const double vy = vel_msg_.linear.y;
@@ -263,7 +287,7 @@ class FourWheelCommander : public rclcpp::Node {
         vel_[3] = wheel_speed;
       }
     }
-    // pivot turn
+    // 原地旋转模式
     else if (mode_selection_ == 3) {
       const double wz = vel_msg_.angular.z;
       const double steer_ang = std::atan2(wheel_base_, steering_track_ + kEps);
@@ -304,11 +328,13 @@ class FourWheelCommander : public rclcpp::Node {
   int mode_selection_{4};
   int joy_mode_selection_{4};
 
-  double wheel_separation_{0.42};
-  double wheel_base_{0.45};
-  double wheel_radius_{0.06};
-  double wheel_steering_y_offset_{0.0};
-  double steering_track_{0.42};
+  double wheel_separation_{0.42};  // 前后轮距，单位米
+  double wheel_base_{0.45};        // 前后轮轴距，单位米
+  double wheel_radius_{0.06};      // 车轮半径，单位米
+  double wheel_steering_y_offset_{
+      0.0};  // 转向中心相对于车轮中心的横向偏移，单位米
+  double steering_track_{
+      0.42};  //  转向轨距，计算得到的前后轮转向中心间距，单位米
   double joy_linear_x_gain_{1.0};
   double joy_linear_y_gain_{1.0};
   double joy_angular_z_gain_{1.0};
@@ -326,6 +352,7 @@ class FourWheelCommander : public rclcpp::Node {
   std::array<double, 4> vel_{};
 };
 
+// 程序入口：启动 ROS2 节点并阻塞运行，直到收到退出信号。
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<FourWheelCommander>());

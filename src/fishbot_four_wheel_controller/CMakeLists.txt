@@ -19,8 +19,18 @@ ament_target_dependencies(four_wheel_commander
   sensor_msgs
 )
 
+add_executable(motion_test_node test/motion_test_node.cpp)
+ament_target_dependencies(motion_test_node
+  rclcpp
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+)
+
+
 install(TARGETS
   four_wheel_commander
+  motion_test_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
