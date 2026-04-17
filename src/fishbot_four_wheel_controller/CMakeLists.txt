@@ -10,6 +10,9 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 add_executable(four_wheel_commander src/four_wheel_commander.cpp)
 ament_target_dependencies(four_wheel_commander
@@ -27,10 +30,21 @@ ament_target_dependencies(motion_test_node
   sensor_msgs
 )
 
+add_executable(four_wheel_closed_loop_odom src/four_wheel_closed_loop_odom.cpp)
+ament_target_dependencies(four_wheel_closed_loop_odom
+  rclcpp
+  sensor_msgs
+  nav_msgs
+  geometry_msgs
+  tf2
+  tf2_ros
+)
+
 
 install(TARGETS
   four_wheel_commander
   motion_test_node
+  four_wheel_closed_loop_odom
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -71,22 +71,6 @@ def generate_launch_description():
         }]
     )
 
-    # 四轮控制节点（手柄输入 joy -> 8 关节命令）
-    four_wheel_controller_node = Node(
-        package='fishbot_four_wheel_controller',
-        executable='four_wheel_commander',
-        output='screen',
-        parameters=[{
-            'wheel_separation': 0.42,
-            'wheel_base': 0.45,
-            'wheel_radius': 0.06,
-            'wheel_steering_y_offset': 0.0,
-            'joy_linear_x_gain': 1.0,
-            'joy_linear_y_gain': 1.0,
-            'joy_angular_z_gain': 1.0,
-        }]
-    )
-
     # Launch RViz
     start_rviz_cmd = Node(
         package='rviz2',
@@ -100,7 +84,6 @@ def generate_launch_description():
     ld.add_action(spawn_entity_cmd)
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(depth_to_scan_node)
-    ld.add_action(four_wheel_controller_node)
     ld.add_action(start_rviz_cmd)
 
 

@@ -76,6 +76,36 @@ def generate_launch_description():
         }]
     )
 
+    four_wheel_odom_node = Node(
+        package='fishbot_four_wheel_controller',
+        executable='four_wheel_closed_loop_odom',
+        name='four_wheel_closed_loop_odom',
+        output='screen',
+        parameters=[{
+            'use_sim_time': True,
+            'wheel_radius': 0.06,
+            'odom_frame_id': 'odom',
+            'base_frame_id': 'base_footprint',
+            'joint_states_topic': '/joint_states',
+            'publish_tf': True,
+            'joint_state_timeout_sec': 0.2,
+
+            'front_left_x': 0.225,
+            'front_left_y': 0.21,
+            'front_right_x': 0.225,
+            'front_right_y': -0.21,
+            'rear_left_x': -0.225,
+            'rear_left_y': 0.21,
+            'rear_right_x': -0.225,
+            'rear_right_y': -0.21,
+
+            'front_left_wheel_dir_sign': 1.0,
+            'front_right_wheel_dir_sign': 1.0,
+            'rear_left_wheel_dir_sign': 1.0,
+            'rear_right_wheel_dir_sign': 1.0,
+        }]
+    )
+    
     four_wheel_controller_node = Node(
         package='fishbot_four_wheel_controller',
         executable='four_wheel_commander',
@@ -148,6 +178,7 @@ def generate_launch_description():
     ld.add_action(spawn_entity_cmd)
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(depth_to_scan_node)
+    ld.add_action(four_wheel_odom_node)
     ld.add_action(four_wheel_controller_node)
     ld.add_action(load_controllers_after_spawn)
     ld.add_action(start_rviz_cmd)
